@@ -16,6 +16,7 @@ main:	irmovq bottom,  %rsp     # initialize stack
 	subq   %rax, %rsi        # DH on rax
 	irmovq $8, %r11
 	mulq   %r11, %rsi        # %rsi = 8 * (size - 1), can change the 3 addqs to mulq?
+	addq   %rdi, %rsi        # %rsi = pointer to last element of the array. DH on RSI
 	call   mergesort
 	halt
 
