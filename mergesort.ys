@@ -75,10 +75,10 @@ done:	ret
 
 merge:
 	pushq  %rbp
-	pushq  %rbx
-	pushq  %rdi          # rdi was popped by mergesort!
-	rrmovq %rdx, %rcx
+	rrmovq %rdx, %rcx    #weaving rrmovqs inside pushes, from 5321 -> 5261, -60.
+	pushq  %rbx 
 	irmovq $8,   %rax
+	pushq  %rdi          # rdi was popped by mergesort!
 	addq   %rax, %rcx    # DH without DF
 	irmovq temp, %rbp    #falldown to mergeloop 1
     
