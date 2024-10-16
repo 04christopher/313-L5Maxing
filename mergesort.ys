@@ -11,13 +11,13 @@
 main:	irmovq bottom,  %rsp     # initialize stack
 	irmovq array, %rdi       # %rdi = pointer to first element of the array
 	xorq   %rax, %rax        # %rsi = size
-	mrmovq size(%rax), %rsi
+	mrmovq size(%rax), %rsi  # DH on rax
 	irmovq $1, %rax          # %rsi = size - 1
-	subq   %rax, %rsi
-	addq   %rsi, %rsi        # %rsi = 8 * (size - 1)
-	addq   %rsi, %rsi
-	addq   %rsi, %rsi
-	addq   %rdi, %rsi        # %rsi = pointer to last element of the array.
+	subq   %rax, %rsi        # DH on rax
+	addq   %rsi, %rsi        # %rsi = 8 * (size - 1), can change the 3 addqs to mulq?
+	addq   %rsi, %rsi        # DH on RSI
+	addq   %rsi, %rsi		 # DH on RSI
+	addq   %rdi, %rsi        # %rsi = pointer to last element of the array. DH on RSI
 	call   mergesort
 	halt
 
@@ -28,29 +28,29 @@ main:	irmovq bottom,  %rsp     # initialize stack
 #
 mergesort:
 	rrmovq %rsi, %rax  	    # is first < last ?
-	subq   %rdi, %rax
+	subq   %rdi, %rax       # DH on rax
 	jle    done             # if not, done.
 
-	rrmovq %rdi, %rdx       # %rdx = mid. Note the use  of ANDQ.
-	addq   %rsi, %rdx       # Since we're doing arithmetic  with
+	rrmovq %rdi, %rdx       # %rdx = mid. Note the use  of ANDQ.  WHOLE CHUNK DH
+	addq   %rsi, %rdx       # Since we're doing arithmetic  with   
 	irmovq $2,   %rax       # pointers, we can not rely only  on
 	divq   %rax, %rdx       # integer division to ensure  we get
 	irmovq $-8,  %rax       # a valid pointer.
 	andq   %rax, %rdx       
-
-	pushq  %rdi
+							#think abt putting this in registers, then using those registers with mergesort
+	pushq  %rdi             #pushq 2x in row stalls on rsp
 	pushq  %rsi             
 	pushq  %rdx             
 	rrmovq %rdx, %rsi       # mergesort(first, mid)
 	call   mergesort
-	popq   %rdx
-	popq   %rsi
+	popq   %rdx             #pop then push right away, we can delete?
+	popq   %rsi             #pop also stalls
 	popq   %rdi
     
 	pushq  %rdi             # mergesort(mid+1, last)
 	pushq  %rsi             
 	pushq  %rdx 
-	rrmovq %rdx, %rdi
+	rrmovq %rdx, %rdi       #think abt this
 	irmovq $8, %rax
 	addq   %rax, %rdi
 	call   mergesort
@@ -58,7 +58,7 @@ mergesort:
 	popq   %rsi
 	popq   %rdi
 
-	call   merge            # merge(first, mid, last)
+	call   merge            # merge(first, mid, last) - possibly can inline merge right here
 
 done:	ret
 
@@ -77,15 +77,15 @@ done:	ret
 merge:
 	pushq  %rbp
 	pushq  %rbx
-	pushq  %rdi
+	pushq  %rdi          # rdi was popped by mergesort!
 	rrmovq %rdx, %rcx
 	irmovq $8,   %rax
-	addq   %rax, %rcx
-	irmovq temp, %rbp
+	addq   %rax, %rcx    # DH without DF
+	irmovq temp, %rbp    #falldown to mergeloop 1
     
 mergeloop1:	
 	rrmovq %rdx, %rax          # while (i <= mid && j <= last)
-	subq   %rdi, %rax
+	subq   %rdi, %rax          # DH on rax
 	jl     mergeloop2
 	
 	rrmovq %rsi, %rax
@@ -94,7 +94,7 @@ mergeloop1:
 
 	mrmovq 0(%rdi), %rax       # %rax = A[i]
 	mrmovq 0(%rcx), %rbx   	   # %ebx = A[j]
-	subq   %rax, %rbx          # if A[i] <= A[j]
+	subq   %rax, %rbx          # if A[i] <= A[j] - DH on rbx
 	jl     mergecopy2
 
 	rmmovq %rax, 0(%rbp)       # copy A[i] to temp
@@ -104,11 +104,11 @@ mergeloop1:
 	jmp    mergeloop1
 
 mergecopy2:
-	mrmovq 0(%rcx), %rbx       # %ebx = A[j] again
-	rmmovq %rbx, 0(%rbp)
+	mrmovq 0(%rcx), %rbx       # %ebx = A[j] again - DH on rbx if jump from mergeloop1
+	rmmovq %rbx, 0(%rbp)       # DH on rbx
 	irmovq $8, %rax
-	addq   %rax, %rbp
-	addq   %rax, %rcx
+	addq   %rax, %rbp         
+	addq   %rax, %rcx           
 	jmp    mergeloop1
 
 mergeloop2:
@@ -138,7 +138,7 @@ mergeloop2:
 	rrmovq %rdi, %rdx
 	irmovq temp, %rdi
 	addq   %rdi, %rsi
-	call   copy
+	call   copy               #can inline copy
 	popq   %rsi
 	popq   %rdi
 
@@ -154,17 +154,17 @@ mergeloop2:
 #	
 copy:	
 	rrmovq %rsi, %rax
-	subq   %rdi, %rax
+	subq   %rdi, %rax        #dh on rax
 	jge     copycontinue
 	
 	rrmovq %rdx, %rax
 	ret
 	
 copycontinue:
-	mrmovq 0(%rdi), %rax
+	mrmovq 0(%rdi), %rax     #dh on rax from jump
 	rmmovq %rax, 0(%rdx)
 
-	irmovq $8, %rax
+	irmovq $8, %rax  
 	addq   %rax, %rdx
 	addq   %rax, %rdi
 	jmp    copy
