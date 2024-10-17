@@ -28,14 +28,30 @@
     #
     mergesort:
         irmovq $8, %r8         #using to keep 8
+
     	rrmovq %rsi, %rax  	    # is first < last ?
     	subq   %rdi, %rax       # DH on rax
     	jle    done             # if not, done.
-    
+				
+		subq   %r8, %rax        # last - first - 8, #check if only 2 eles
+		jne merging 
+
+		mrmovq 0(%rdi), %r10    #r10 = first, okay just swap if first > last
+		mrmovq 0(%rsi), %r11    #r11 = last
+		rrmovq %r10, %r9        #save r10
+
+        subq   %r11, %r10       #if first > last
+		jle    done             #if first - last <= 0, don't do anything
+
+		rmmovq %r11, 0(%rdi)    #*first = *last
+		rmmovq %r9, 0(%rsi)    #*last = *first
+		jmp    done
+
+	merging:
     	rrmovq %rdi, %rdx
 		irmovq $2,   %rax       # %rdx = mid. Note the use  of ANDQ.  WHOLE CHUNK DH
     	addq   %rsi, %rdx       # Since we're doing arithmetic  with   
-    	       				# pointers, we can not rely only  on
+    	       				    # pointers, we can not rely only  on
     	divq   %rax, %rdx       # integer division to ensure  we get
     	irmovq $-8,  %rax       # a valid pointer.
     	andq   %rax, %rdx       
@@ -176,19 +192,19 @@
     #
     .pos 0x1000
     array:
-    		.quad	0x2bc2a
-    	.quad	0x43516
-    	.quad	0xaf85c
-    	.quad	0xe74e3
-    	.quad	0x19e7a
-    	.quad	0xfc255
-    	.quad	0x37bcb
-    	.quad	0x875fa
-    	.quad	0xd60bb
-    	.quad	0x58fcc
-    	.quad	0x62e4d
-    	.quad	0x82d8a
-    	.quad	0x15e49
+	    		.quad	0x2bc2a
+        .quad   0x4
+        .quad   0x1
+        .quad   0x6
+        .quad   0x2
+        .quad   0x5
+        .quad   0x3
+        .quad   0x8
+        .quad   0x7
+        .quad   0x9
+        .quad   0xc
+        .quad   0xa
+        .quad   0xb
     
     #
     # Temporary array.
