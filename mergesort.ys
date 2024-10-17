@@ -18,6 +18,7 @@
     	mulq   %r11, %rsi        # %rsi = 8 * (size - 1), can change the 3 addqs to mulq?
     	addq   %rdi, %rsi        # %rsi = pointer to last element of the array. DH on RSI
     	call   mergesort
+		irmovq $1, %rax          #to check in simulator if it finished.
     	halt
     
     #
@@ -30,9 +31,10 @@
     	subq   %rdi, %rax       # DH on rax
     	jle    done             # if not, done.
     
-    	rrmovq %rdi, %rdx       # %rdx = mid. Note the use  of ANDQ.  WHOLE CHUNK DH
+    	rrmovq %rdi, %rdx
+		irmovq $2,   %rax       # %rdx = mid. Note the use  of ANDQ.  WHOLE CHUNK DH
     	addq   %rsi, %rdx       # Since we're doing arithmetic  with   
-    	irmovq $2,   %rax       # pointers, we can not rely only  on
+    	       				# pointers, we can not rely only  on
     	divq   %rax, %rdx       # integer division to ensure  we get
     	irmovq $-8,  %rax       # a valid pointer.
     	andq   %rax, %rdx       
@@ -85,11 +87,11 @@
     mergeloop1:	
     	rrmovq %rdx, %rax          # while (i <= mid && j <= last)
     	subq   %rdi, %rax          # DH on rax
-    	jl     mergeloop2
+    	jl     ml2copy1
     	
     	rrmovq %rsi, %rax
     	subq   %rcx, %rax
-    	jl     mergeloop2
+    	jl     ml2copy1
     
     	mrmovq 0(%rdi), %rax       # %rax = A[i]
     	mrmovq 0(%rcx), %rbx   	   # %rbx = A[j]
@@ -109,16 +111,6 @@
     	addq   %rax, %rbp         
     	addq   %rax, %rcx           
     	jmp    mergeloop1
-    
-    mergeloop2:
-    	rrmovq %rdx, %r11  #rsi         # Copy A[i] ... A[mid] to temp.
-    	
-    copy1:	
-    	rrmovq %rdx, %rax        #rdx used to be rsi, bc rdx had been movoed into rsi
-    	subq   %rdi, %rax        #dh on rax
-    	jge     copycontinue1
-    	
-    	jmp cont1
     	
     copycontinue1:
     	mrmovq 0(%rdi), %rax     #dh on rax from jump
@@ -127,17 +119,11 @@
     	irmovq $8, %rax  
     	addq   %rax, %rbp
     	addq   %rax, %rdi
-    	jmp    copy1
-    	
-    cont1:
-    	rrmovq %rcx, %r11  #rdi
-    	
-    copy2:	
-    	rrmovq %rsi, %rax
-    	subq   %rcx, %rax        #dh on rax
-    	jge     copycontinue2
-    	
-    	jmp cont2
+    ml2copy1:	
+    	rrmovq %rdx, %rax        #rdx used to be rsi, bc rdx had been movoed into rsi
+    	subq   %rdi, %rax        #dh on rax
+    	jge     copycontinue1
+    	jmp copy2
     	
     copycontinue2:
     	mrmovq 0(%rcx), %rax     #dh on rax from jump
@@ -146,7 +132,11 @@
     	irmovq $8, %rax  
     	addq   %rax, %rbp
     	addq   %rax, %rcx
-    	jmp    copy2
+    	
+    copy2:	
+    	rrmovq %rsi, %rax
+    	subq   %rcx, %rax        #dh on rax
+    	jge     copycontinue2
     	
     cont2:
     	
