@@ -111,17 +111,13 @@
     	jmp    mergeloop1
     
     mergeloop2:
-    	#pushq  %rdx
-    	#pushq  %rsi
     	rrmovq %rdx, %r11  #rsi         # Copy A[i] ... A[mid] to temp.
-    	#rrmovq %rbp, %r12  #rdx, #can just manipulate rbp because is rbp = copy()
     	
     copy1:	
     	rrmovq %rdx, %rax        #rdx used to be rsi, bc rdx had been movoed into rsi
     	subq   %rdi, %rax        #dh on rax
     	jge     copycontinue1
     	
-    	#rrmovq %rbp, %rax
     	jmp cont1
     	
     copycontinue1:
@@ -134,21 +130,13 @@
     	jmp    copy1
     	
     cont1:
-    	#rrmovq %rax, %rbp
-    	#popq   %rsi
-    	#popq   %rdx
-    
-        #pushq  %rdx               # Copy A[j] ... A[last] to temp.
-    	#pushq  %rsi
     	rrmovq %rcx, %r11  #rdi
-    	#rrmovq %rbp, %r12 #rdx
     	
     copy2:	
     	rrmovq %rsi, %rax
     	subq   %rcx, %rax        #dh on rax
     	jge     copycontinue2
     	
-    	#rrmovq %rbp, %rax
     	jmp cont2
     	
     copycontinue2:
@@ -161,17 +149,11 @@
     	jmp    copy2
     	
     cont2:
-    	#rrmovq %rax, %rbp
-    	#popq   %rsi
-    	#popq   %rdx
     	
-    	popq   %rdi
-    	
-    	pushq  %rdi
-    	pushq  %rsi	              # Copy temp back to A[first] ... A[last]
-    	subq   %rdi, %rsi
+    	popq   %rdi	              # Copy temp back to A[first] ... A[last]
+    	subq   %rdi, %rsi  #rsi
     	rrmovq %rdi, %rdx
-    	irmovq temp, %rdi
+    	irmovq temp, %rdi             # instead of putting temp in rdi, put in somewhere else
     	addq   %rdi, %rsi
     	
     copy3:	
@@ -191,8 +173,6 @@
     	jmp    copy3
     	
     cont3:	
-    	popq   %rsi
-    	popq   %rdi
     
     	popq   %rbx
     	popq   %rbp
