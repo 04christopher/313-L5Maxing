@@ -103,7 +103,7 @@
     	jmp    mergeloop1
     
     mergecopy2:
-    	mrmovq 0(%rcx), %rbx       # %ebx = A[j] again - DH on rbx if jump from mergeloop1
+    	mrmovq 0(%rcx), %rbx       # %rbx = A[j] again - DH on rbx if jump from mergeloop1
     	rmmovq %rbx, 0(%rbp)       # DH on rbx
     	irmovq $8, %rax
     	addq   %rax, %rbp         
@@ -111,59 +111,59 @@
     	jmp    mergeloop1
     
     mergeloop2:
-    	pushq  %rdx
-    	pushq  %rsi
-    	rrmovq %rdx, %rsi         # Copy A[i] ... A[mid] to temp.
-    	rrmovq %rbp, %rdx
+    	#pushq  %rdx
+    	#pushq  %rsi
+    	rrmovq %rdx, %r11  #rsi         # Copy A[i] ... A[mid] to temp.
+    	#rrmovq %rbp, %r12  #rdx, #can just manipulate rbp because is rbp = copy()
     	
     copy1:	
-    	rrmovq %rsi, %rax
+    	rrmovq %rdx, %rax        #rdx used to be rsi, bc rdx had been movoed into rsi
     	subq   %rdi, %rax        #dh on rax
     	jge     copycontinue1
     	
-    	rrmovq %rdx, %rax
+    	#rrmovq %rbp, %rax
     	jmp cont1
     	
     copycontinue1:
     	mrmovq 0(%rdi), %rax     #dh on rax from jump
-    	rmmovq %rax, 0(%rdx)
+    	rmmovq %rax, 0(%rbp)
     
     	irmovq $8, %rax  
-    	addq   %rax, %rdx
+    	addq   %rax, %rbp
     	addq   %rax, %rdi
     	jmp    copy1
     	
     cont1:
-    	rrmovq %rax, %rbp
-    	popq   %rsi
-    	popq   %rdx
+    	#rrmovq %rax, %rbp
+    	#popq   %rsi
+    	#popq   %rdx
     
-        pushq  %rdx               # Copy A[j] ... A[last] to temp.
-    	pushq  %rsi
-    	rrmovq %rcx, %rdi
-    	rrmovq %rbp, %rdx
+        #pushq  %rdx               # Copy A[j] ... A[last] to temp.
+    	#pushq  %rsi
+    	rrmovq %rcx, %r11  #rdi
+    	#rrmovq %rbp, %r12 #rdx
     	
     copy2:	
     	rrmovq %rsi, %rax
-    	subq   %rdi, %rax        #dh on rax
+    	subq   %rcx, %rax        #dh on rax
     	jge     copycontinue2
     	
-    	rrmovq %rdx, %rax
+    	#rrmovq %rbp, %rax
     	jmp cont2
     	
     copycontinue2:
-    	mrmovq 0(%rdi), %rax     #dh on rax from jump
-    	rmmovq %rax, 0(%rdx)
+    	mrmovq 0(%rcx), %rax     #dh on rax from jump
+    	rmmovq %rax, 0(%rbp)
     
     	irmovq $8, %rax  
-    	addq   %rax, %rdx
-    	addq   %rax, %rdi
+    	addq   %rax, %rbp
+    	addq   %rax, %rcx
     	jmp    copy2
     	
     cont2:
-    	rrmovq %rax, %rbp
-    	popq   %rsi
-    	popq   %rdx
+    	#rrmovq %rax, %rbp
+    	#popq   %rsi
+    	#popq   %rdx
     	
     	popq   %rdi
     	
