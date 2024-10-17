@@ -27,6 +27,7 @@
     #    %rsi: pointer to the last element of the range to sort.
     #
     mergesort:
+        irmovq $8, %r8         #using to keep 8
     	rrmovq %rsi, %rax  	    # is first < last ?
     	subq   %rdi, %rax       # DH on rax
     	jle    done             # if not, done.
@@ -52,8 +53,7 @@
     	pushq  %rsi             
     	pushq  %rdx 
     	rrmovq %rdx, %rdi       #think abt this
-    	irmovq $8, %rax
-    	addq   %rax, %rdi
+    	addq   %r8, %rdi
     	call   mergesort
     	popq   %rdx
     	popq   %rsi
@@ -79,9 +79,9 @@
     	pushq  %rbp
     	rrmovq %rdx, %rcx    #weaving rrmovqs inside pushes
     	pushq  %rbx 
-    	irmovq $8,   %rax
+    	#irmovq $8,   %rax
     	pushq  %rdi          # rdi was popped by mergesort!
-    	addq   %rax, %rcx    # DH without DF
+    	addq   %r8, %rcx    # DH without DF
     	irmovq temp, %rbp    #falldown to mergeloop 1
         
     mergeloop1:	
@@ -99,26 +99,25 @@
     	jl     mergecopy2
     
     	rmmovq %rax, 0(%rbp)       # copy A[i] to temp
-    	irmovq $8, %rax
-    	addq   %rax, %rbp
-    	addq   %rax, %rdi
+
+    	addq   %r8, %rbp
+    	addq   %r8, %rdi
     	jmp    mergeloop1
     
     mergecopy2:
     	mrmovq 0(%rcx), %rbx       # %rbx = A[j] again - DH on rbx if jump from mergeloop1
     	rmmovq %rbx, 0(%rbp)       # DH on rbx
-    	irmovq $8, %rax
-    	addq   %rax, %rbp         
-    	addq   %rax, %rcx           
+ 
+    	addq   %r8, %rbp         
+    	addq   %r8, %rcx           
     	jmp    mergeloop1
     	
     copycontinue1:
     	mrmovq 0(%rdi), %rax     #dh on rax from jump
     	rmmovq %rax, 0(%rbp)
-    
-    	irmovq $8, %rax  
-    	addq   %rax, %rbp
-    	addq   %rax, %rdi
+ 
+    	addq   %r8, %rbp
+    	addq   %r8, %rdi
     ml2copy1:	
     	rrmovq %rdx, %rax        #rdx used to be rsi, bc rdx had been movoed into rsi
     	subq   %rdi, %rax        #dh on rax
@@ -129,9 +128,8 @@
     	mrmovq 0(%rcx), %rax     #dh on rax from jump
     	rmmovq %rax, 0(%rbp)
     
-    	irmovq $8, %rax  
-    	addq   %rax, %rbp
-    	addq   %rax, %rcx
+    	addq   %r8, %rbp
+    	addq   %r8, %rcx
     	
     copy2:	
     	rrmovq %rsi, %rax
@@ -142,24 +140,22 @@
     	
     	popq   %rdi	              # Copy temp back to A[first] ... A[last]
     	subq   %rdi, %rsi  #rsi
-    	rrmovq %rdi, %rdx
-    	irmovq temp, %rdi             # instead of putting temp in rdi, put in somewhere else
-    	addq   %rdi, %rsi
+    	irmovq temp, %r11            # instead of putting temp in rdi, put in somewhere else
+    	addq   %r11, %rsi
     	
     copy3:	
     	rrmovq %rsi, %rax
-    	subq   %rdi, %rax        #dh on rax
+    	subq   %r11, %rax        #dh on rax
     	jge     copycontinue3
-    	rrmovq %rdx, %rax
+    	rrmovq %rdi, %rax
     	jmp cont3
     	
     copycontinue3:
-    	mrmovq 0(%rdi), %rax     #dh on rax from jump
-    	rmmovq %rax, 0(%rdx)
+    	mrmovq 0(%r11), %rax     #dh on rax from jump
+    	rmmovq %rax, 0(%rdi)
     
-    	irmovq $8, %rax  
-    	addq   %rax, %rdx
-    	addq   %rax, %rdi
+    	addq   %r8, %rdi
+    	addq   %r8, %r11
     	jmp    copy3
     	
     cont3:	
